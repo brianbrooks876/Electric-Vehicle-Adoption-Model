@@ -1,0 +1,11 @@
+# Streamlit's built-in theming — this is the officially supported way to add
+# color without writing custom CSS/HTML. Drop this file in a `.streamlit/`
+# folder next to your dashboard script (already done if you downloaded the
+# folder structure as-is) and Streamlit picks it up automatically on next run.
+[theme]
+base = "light"
+primaryColor = "#16A085"           # accent: active tab underline, selectbox focus, progress bars, buttons
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F5F3"  # subtle green-tinted grey for containers/widgets
+textColor = "#1F2A28"
+font = "sans serif"
