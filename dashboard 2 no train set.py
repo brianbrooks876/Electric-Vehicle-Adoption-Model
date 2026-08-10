@@ -39,9 +39,9 @@ counties_geojson = load_counties_geojson()
 ALL_COUNTY_FIPS = [feat["id"] for feat in counties_geojson["features"]]
 modelOverviewDF = pd.read_csv('deploymentDfnew.csv')
 modelOverviewDF["StCnty FIPS Code"] = modelOverviewDF["StCnty FIPS Code"].astype(str).str.zfill(5)
-MODEL_METRICS = (modelmetricsDF.set_index('Metrics').transpose().iloc[1:].to_dict(orient='index'))
 testOnlyDF = modelOverviewDF[modelOverviewDF["split"] == "test"].copy()
 modelmetricsDF = pd.read_csv('model_metrics_new.csv')
+MODEL_METRICS = (modelmetricsDF.set_index('Metrics').transpose().iloc[1:].to_dict(orient='index'))
 top_states_by_mention = pd.read_csv('deploymentDF3new.csv')
 
 # Readable labels for the Features tab
