@@ -83,6 +83,14 @@ FEATURE_LABELS = {
 
 # Navigation
 st.title("EV Adoption Dashboard")
+st.info(
+    "**This demo only shows counties held out of model training.** "
+    "For any county the model was trained on, its \"prediction\" would just be "
+    "reporting what the model already saw and fit to — not a genuine test of "
+    "accuracy. Restricting the dropdowns to held-out counties means every "
+    "prediction shown here is an honest, out-of-sample result.",
+    icon="ℹ️",
+)
 
 # Overview and Features both need a State/County picker that stays in sync with
 # each other. st.tabs() renders every tab's contents in the same run (they're
@@ -191,12 +199,12 @@ with tab_overview:
         with st.container(border=True):
             st.subheader("County Features")
             feats = {
-                "Median Household Income": f"${row['Median_household_income']:,.2f}" if row is not None else "-",
-                "Charging Stations Per 100K": f"{row['chargers_per_100k']:,.2f}" if row is not None else "-",
-                "Population Density": f"{row['population_density']:,.2f} /mi²" if row is not None else "-",
-                "Educated Population": f"{row['pct_college_educated']:,.2f}%" if row is not None else "-",
-                "Reddit Sentiment": f"{row['avg_sentiment']:,.2f}" if row is not None else "-",
-                "Total Population": f"{row['Total_population']:,.0f}" if row is not None else "-",
+                "Median Household Income": f"${row['Median_household_income']:,.0f}" if row is not None else "-",
+                "Charging Stations Per 100K": f"{row['chargers_per_100k']:,}" if row is not None else "-",
+                "Population Density": f"{row['population_density']:,} /mi²" if row is not None else "-",
+                "Educated Population": f"{row['pct_college_educated']}%" if row is not None else "-",
+                "Reddit Sentiment": f"{row['avg_sentiment']}" if row is not None else "-",
+                "Total Population": f"{row['Total_population']:,}" if row is not None else "-",
             }
             st.table(pd.DataFrame(feats.items(), columns=["Feature", "Value"]).set_index("Feature"))
 
@@ -349,9 +357,12 @@ with tab_sentiment:
         neg_pct = by_sentiment.get('negative', 0) / total_mentions * 100
 
         k1, k2, k3 = st.columns(3)
-        k1.metric("Positive", f"{pos_pct:.0f}%")
-        k2.metric("Neutral", f"{neu_pct:.0f}%")
-        k3.metric("Negative", f"{neg_pct:.0f}%")
+        # st.success/warning/error give built-in green/amber/red boxes — an easy
+        # bit of native color that maps naturally onto positive/neutral/negative,
+        # no custom CSS required.
+        k1.success(f"**Positive**\n\n{pos_pct:.0f}%")
+        k2.warning(f"**Neutral**\n\n{neu_pct:.0f}%")
+        k3.error(f"**Negative**\n\n{neg_pct:.0f}%")
 
         st.divider()
         st.subheader("Top 10 States By Mention Count")
