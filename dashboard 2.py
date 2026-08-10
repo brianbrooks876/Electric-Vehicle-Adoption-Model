@@ -77,6 +77,49 @@ FEATURE_LABELS = {
 # Navigation
 st.title("EV Adoption Dashboard")
 
+# Overview and Features both need a State/County picker that stays in sync with
+# each other. st.tabs() renders every tab's contents in the same run (they're
+# just hidden/shown, not separate pages), so the two pickers can't share a
+# widget `key` the way the old if/elif page routing let them — each needs its
+# own key, synced through this canonical pair of session_state values instead.
+if "selected_state" not in st.session_state:
+    st.session_state.selected_state = "-"
+if "selected_county" not in st.session_state:
+    st.session_state.selected_county = "-"
+
+
+def render_state_county_selectors(suffix):
+    """Render a State/County selectbox pair with a unique widget key (suffix),
+    reading from and writing back to the shared selected_state/selected_county
+    session_state values so every tab's pickers stay in sync."""
+    state_key = f"state_select_{suffix}"
+    county_key = f"county_select_{suffix}"
+
+    states = ["-"] + sorted(modelOverviewDF["State"].dropna().unique())
+    state_index = states.index(st.session_state.selected_state) if st.session_state.selected_state in states else 0
+
+    def on_state_change():
+        st.session_state.selected_state = st.session_state[state_key]
+        st.session_state.selected_county = "-"
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.selectbox("State", states, index=state_index, key=state_key, on_change=on_state_change)
+
+    current_state = st.session_state.selected_state
+    county_opts = ["-"] + sorted(modelOverviewDF[modelOverviewDF["State"] == current_state]["County"].unique()) \
+        if current_state != "-" else ["-"]
+    county_index = county_opts.index(st.session_state.selected_county) if st.session_state.selected_county in county_opts else 0
+
+    def on_county_change():
+        st.session_state.selected_county = st.session_state[county_key]
+
+    with c2:
+        st.selectbox("County", county_opts, index=county_index, key=county_key, on_change=on_county_change)
+
+    return st.session_state.selected_state, st.session_state.selected_county
+
+
 tab_overview, tab_models, tab_features, tab_sentiment = st.tabs(
     ["Overview", "Models", "Features", "Sentiment"]
 )
@@ -86,23 +129,14 @@ tab_overview, tab_models, tab_features, tab_sentiment = st.tabs(
 # OVERVIEW
 # ---------------------------------------------------------------------------
 with tab_overview:
-    state_sel = st.session_state.get("ov_state", "-")
-    county_sel = st.session_state.get("ov_county", "-")
     row = None
-    if state_sel != "-" and county_sel != "-":
-        match = modelOverviewDF[(modelOverviewDF["State"] == state_sel) & (modelOverviewDF["County"] == county_sel)]
+    if st.session_state.selected_state != "-" and st.session_state.selected_county != "-":
+        match = modelOverviewDF[(modelOverviewDF["State"] == st.session_state.selected_state) &
+                                 (modelOverviewDF["County"] == st.session_state.selected_county)]
         if not match.empty:
             row = match.iloc[0]
 
-    c1, c2, c3, c4, c5 = st.columns(5)
-    with c1:
-        state_choice = st.selectbox(
-            "State", ["-"] + sorted(modelOverviewDF["State"].dropna().unique()), key="ov_state"
-        )
-    with c2:
-        county_opts = ["-"] + sorted(modelOverviewDF[modelOverviewDF["State"] == state_choice]["County"].unique()) \
-            if state_choice != "-" else ["-"]
-        county_choice = st.selectbox("County", county_opts, key="ov_county")
+    c3, c4, c5 = st.columns(3)
     with c3:
         st.metric("Predicted Adoption Tier", row["predicted_tier"] if row is not None else "-")
     with c4:
@@ -118,6 +152,8 @@ with tab_overview:
     with c5:
         val = f"{row['infrastructure_gap_score']:.2f}" if row is not None else "-"
         st.metric("Infrastructure Gap Score", val)
+
+    render_state_county_selectors("overview")
 
     st.divider()
     col_map, col_feat = st.columns([1.4, 1])
@@ -222,18 +258,11 @@ with tab_features:
     st.write("")
 
     # --- State / county selection --------------------------------------------
-    # Same session_state keys as the Overview page pickers, so choosing a
-    # county here also updates Overview (and vice versa) — this is what lets
-    # the waterfall below know which county to explain.
-    c1, c2 = st.columns(2)
-    with c1:
-        state_choice = st.selectbox(
-            "State", ["-"] + sorted(modelOverviewDF["State"].dropna().unique()), key="ov_state"
-        )
-    with c2:
-        county_opts = ["-"] + sorted(modelOverviewDF[modelOverviewDF["State"] == state_choice]["County"].unique()) \
-            if state_choice != "-" else ["-"]
-        county_choice = st.selectbox("County", county_opts, key="ov_county")
+    # Uses the same shared session_state as the Overview tab's pickers (via
+    # render_state_county_selectors), so choosing a county here also updates
+    # Overview, and vice versa — this is what lets the waterfall below know
+    # which county to explain.
+    state_choice, county_choice = render_state_county_selectors("features")
 
     st.write("")
 
