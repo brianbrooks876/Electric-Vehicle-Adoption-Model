@@ -138,17 +138,21 @@ with tab_overview:
 
     c3, c4, c5 = st.columns(3)
     with c3:
-        st.metric("Predicted Adoption Tier", row["predicted_tier"] if row is not None else "-")
-    with c4:
-        # Actual tier only shown for held-out test counties, so this never presents
-        # an in-sample match as if it were genuine model performance
+        # Predicted tier is only a genuine, honest prediction for held-out test
+        # counties — for training counties the model already saw this row while
+        # fitting, so "predicting" it again would just be reporting an in-sample
+        # fit, not real predictive performance.
         if row is not None and row.get("split") == "test":
-            st.metric("Actual Adoption Tier", row["actual_tier"])
+            st.metric("Predicted Adoption Tier", row["predicted_tier"])
         elif row is not None:
-            st.metric("Actual Adoption Tier", "Not available")
+            st.metric("Predicted Adoption Tier", "Not available")
             st.caption("Training county")
         else:
-            st.metric("Actual Adoption Tier", "-")
+            st.metric("Predicted Adoption Tier", "-")
+    with c4:
+        # Actual tier is ground truth from real vehicle registration data, so
+        # it's known for every county regardless of split — always show it.
+        st.metric("Actual Adoption Tier", row["actual_tier"] if row is not None else "-")
     with c5:
         val = f"{row['infrastructure_gap_score']:.2f}" if row is not None else "-"
         st.metric("Infrastructure Gap Score", val)
@@ -188,12 +192,12 @@ with tab_overview:
         with st.container(border=True):
             st.subheader("County Features")
             feats = {
-                "Median Household Income": f"${row['Median_household_income']:,.2f}" if row is not None else "-",
-                "Charging Stations Per 100K": f"{row['chargers_per_100k']:,.2f}" if row is not None else "-",
-                "Population Density": f"{row['population_density']:,.2f} /mi²" if row is not None else "-",
-                "Educated Population": f"{row['pct_college_educated']:,.2f}%" if row is not None else "-",
-                "Reddit Sentiment": f"{row['avg_sentiment']:,.2f}" if row is not None else "-",
-                "Total Population": f"{row['Total_population']:,.0f}" if row is not None else "-",
+                "Median Household Income": f"${row['Median_household_income']:,.0f}" if row is not None else "-",
+                "Charging Stations Per 100K": f"{row['chargers_per_100k']:,}" if row is not None else "-",
+                "Population Density": f"{row['population_density']:,} /mi²" if row is not None else "-",
+                "Educated Population": f"{row['pct_college_educated']}%" if row is not None else "-",
+                "Reddit Sentiment": f"{row['avg_sentiment']}" if row is not None else "-",
+                "Total Population": f"{row['Total_population']:,}" if row is not None else "-",
             }
             st.table(pd.DataFrame(feats.items(), columns=["Feature", "Value"]).set_index("Feature"))
 
