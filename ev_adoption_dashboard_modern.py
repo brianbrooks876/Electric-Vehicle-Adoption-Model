@@ -443,11 +443,6 @@ elif page == "Features":
 # SENTIMENT
 # ---------------------------------------------------------------------------
 elif page == "Sentiment":
-    '''c1, c2, c3 = st.columns(3)
-    with c1: metric_card("No. of Reddit Posts", "940,106")
-    with c2: metric_card("Posts Mentioning States", "11,603")
-    with c3: metric_card("NER Model", "RoBERTa-large")
-'''
     st.write("")
     with st.container(border=True):
         top_states_by_mention = top_states_by_mention.sort_values(by='post_count', ascending=False)
