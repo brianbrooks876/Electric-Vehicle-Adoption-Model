@@ -199,12 +199,12 @@ with tab_overview:
         with st.container(border=True):
             st.subheader("County Features")
             feats = {
-                "Median Household Income": f"${row['Median_household_income']:,.0f}" if row is not None else "-",
-                "Charging Stations Per 100K": f"{row['chargers_per_100k']:,}" if row is not None else "-",
-                "Population Density": f"{row['population_density']:,} /mi²" if row is not None else "-",
-                "Educated Population": f"{row['pct_college_educated']}%" if row is not None else "-",
-                "Reddit Sentiment": f"{row['avg_sentiment']}" if row is not None else "-",
-                "Total Population": f"{row['Total_population']:,}" if row is not None else "-",
+                "Median Household Income": f"${row['Median_household_income']:,.2f}" if row is not None else "-",
+                "Charging Stations Per 100K": f"{row['chargers_per_100k']:,.2f}" if row is not None else "-",
+                "Population Density": f"{row['population_density']:,.2f} /mi²" if row is not None else "-",
+                "Educated Population": f"{row['pct_college_educated']:.2f}%" if row is not None else "-",
+                "Reddit Sentiment": f"{row['avg_sentiment']:.2f}" if row is not None else "-",
+                "Total Population": f"{row['Total_population']:,.0f}" if row is not None else "-",
             }
             st.table(pd.DataFrame(feats.items(), columns=["Feature", "Value"]).set_index("Feature"))
 
@@ -218,11 +218,11 @@ with tab_models:
 
         metrics_table = pd.DataFrame(MODEL_METRICS).transpose()
         metrics_table = metrics_table.rename(columns={
-            "precision": "Precision", "recall": "Recall", "f1-score": "F1", "support": "Support",
+            "precision": "Precision", "recall": "Recall", "f1-score": "F1",
         })
         st.dataframe(
-            metrics_table[["Precision", "Recall", "F1", "Support"]].style.format(
-                {"Precision": "{:.3f}", "Recall": "{:.3f}", "F1": "{:.3f}", "Support": "{:.0f}"}
+            metrics_table[["Precision", "Recall", "F1", "ROC-AUC"]].style.format(
+                {"Precision": "{:.3f}", "Recall": "{:.3f}", "F1": "{:.3f}", "ROC-AUC": "{:.3f}"}
             ),
             use_container_width=True,
         )
