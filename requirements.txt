@@ -1,10 +1,8 @@
 streamlit
 pandas
 numpy
-plotly.express
-plotly.graph_objects
+plotly
 streamlit_option_menu
-matplotlib.cm
-matplotlib.colors
+matplotlib
 joblib
 shap
