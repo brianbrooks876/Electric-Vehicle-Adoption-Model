@@ -1,3 +1,4 @@
+# Import necessary packages
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -9,10 +10,11 @@ import shap
 # Page config
 st.set_page_config(page_title="EV Adoption Dashboard", layout="wide", initial_sidebar_state="collapsed")
 
+# Hexcodes for chloropleth colours
 TIER_COLORS = {"High": "#4c8bf0", "Medium": "#e0a234", "Low": "#d9635b", "No data": "#808495"}
 
 
-# Data loading
+# SHAP Analysis data loading
 @st.cache_resource
 def load_shap_values():
     return {
@@ -22,36 +24,27 @@ def load_shap_values():
         "Bagging": joblib.load('models/shap_values_bg.joblib'),
     }
 
-
+# Chloropleth data loading
 @st.cache_data
 def load_counties_geojson():
-    # Loaded once and reused both as the choropleth's geometry source and as the
-    # master list of every U.S. county FIPS code, so we can tell "no data for
-    # this county" apart from "this shape failed to render".
     import json
     import urllib.request
     url = "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"
     with urllib.request.urlopen(url) as resp:
         return json.load(resp)
 
-
+# Load shap values, chloropleth, and all necessary DataFrames, normalize all necessary values. Filter for only the test split
 shap_values = load_shap_values()
 counties_geojson = load_counties_geojson()
 ALL_COUNTY_FIPS = [feat["id"] for feat in counties_geojson["features"]]
-
-modelOverviewDF = pd.read_csv('deploymentDfnew.csv')
-# Ensure FIPS codes keep their leading zero (e.g. Alabama = 01001, not 1001) — without this, every county whose FIPS starts with 0 fails to match the geojson's zero-padded string IDs and renders as a blank gap on the map.
-modelOverviewDF["StCnty FIPS Code"] = modelOverviewDF["StCnty FIPS Code"].astype(str).str.zfill(5)
-
 testOnlyDF = modelOverviewDF[modelOverviewDF["split"] == "test"].copy()
 modelmetricsDF = pd.read_csv('model_metrics_new.csv')
-
-# Sentiment tab's source data — read once here rather than a second time under a separate `sentimentOverviewDF` name, since both used to load the identical CSV.
 top_states_by_mention = pd.read_csv('deploymentDF3new.csv')
-
+modelOverviewDF = pd.read_csv('deploymentDfnew.csv')
+modelOverviewDF["StCnty FIPS Code"] = modelOverviewDF["StCnty FIPS Code"].astype(str).str.zfill(5)
 MODEL_METRICS = (modelmetricsDF.set_index('Metrics').transpose().iloc[1:].to_dict(orient='index'))
 
-# Readable labels for the raw SHAP/model column names
+# Readable labels for the Features tab
 FEATURE_LABELS = {
     "Total_population": "Total population",
     "pct_college_educated": "Educated population",
@@ -62,7 +55,7 @@ FEATURE_LABELS = {
 }
 
 
-# Navigation
+# Navigation Page
 st.title("EV Adoption Dashboard")
 st.info(
     "**This demo only shows counties held out of model training.** "
@@ -70,16 +63,14 @@ st.info(
     "reporting what the model already saw and fit to — not a genuine test of "
     "accuracy. Restricting the dropdowns to held-out counties means every "
     "prediction shown here is an honest, out-of-sample result.",
-    icon="ℹ️",
 )
 
-# Overview and Features both need a State/County picker that stays in sync with each other. st.tabs() renders every tab's contents in the same run (they're just hidden/shown, not separate pages), so the two pickers can't share a widget `key` the way the old if/elif page routing let them — each needs its own key, synced through this canonical pair of session_state values instead.
-if "selected_state" not in st.session_state:
+# State/County picker
     st.session_state.selected_state = "-"
 if "selected_county" not in st.session_state:
     st.session_state.selected_county = "-"
 
-# Render a State/County selectbox pair with a unique widget key (suffix), reading from and writing back to the shared selected_state/selected_county session_state values so every tab's pickers stay in sync. Options are restricted to testOnlyDF, so only held-out counties are selectable."""
+# State/County selectbox pair
 def render_state_county_selectors(suffix):
     state_key = f"state_select_{suffix}"
     county_key = f"county_select_{suffix}"
@@ -114,7 +105,7 @@ tab_overview, tab_models, tab_features, tab_sentiment = st.tabs(
 )
 
 
-# OVERVIEW
+# Overview Page
 with tab_overview:
     row = None
     if st.session_state.selected_state != "-" and st.session_state.selected_county != "-":
@@ -123,11 +114,11 @@ with tab_overview:
         if not match.empty:
             row = match.iloc[0]
 
+    # Cards
     c3, c4, c5 = st.columns(3)
     with c3:
         st.metric("Actual Adoption Tier", row["actual_tier"] if row is not None else "-")
     with c4:
-        # The dropdowns above only ever offer held-out test counties, so every selectable county here has a genuine, honest prediction — no in-sample "Training county" case to guard against.
         st.metric("Predicted Adoption Tier", row["predicted_tier"] if row is not None else "-")
     with c5:
         val = f"{row['infrastructure_gap_score']:.2f}" if row is not None else "-"
@@ -175,7 +166,7 @@ with tab_overview:
             st.table(pd.DataFrame(feats.items(), columns=["Feature", "Value"]).set_index("Feature"))
 
 
-# MODELS
+# Model Page
 with tab_models:
     with st.container(border=True):
         st.subheader("Metrics By Model")
@@ -191,7 +182,7 @@ with tab_models:
             use_container_width=True,
         )
 
-# FEATURES
+# Features Page
 with tab_features:
     model_choice = st.radio(
         "Model", ["Logistic Regression", "Random Forest", "XGBoost", "Bagging"],
@@ -202,7 +193,7 @@ with tab_features:
     vals = explanation.values[..., 1] if explanation.values.ndim == 3 else explanation.values
     feat_names = list(explanation.feature_names)
 
-    # Panel 1: global feature importance
+    # Global feature importance
     with st.container(border=True):
         st.subheader("What drives EV adoption predictions")
         st.caption("Average impact of each factor on the model's prediction, across all counties")
@@ -229,7 +220,6 @@ with tab_features:
 
     st.write("")
 
-    # Uses the same shared session_state as the Overview tab's pickers (via render_state_county_selectors), so choosing a county here also updates Overview, and vice versa — this is what lets the waterfall below know which county to explain.
     state_choice, county_choice = render_state_county_selectors("features")
 
     st.write("")
@@ -240,7 +230,7 @@ with tab_features:
         if not match.empty:
             row = match.iloc[0]
 
-    # Panel 2: local explanation (waterfall)
+    # SHAP Waterfall
     with st.container(border=True):
         if row is not None:
             st.subheader(f'Why {county_choice}, {state_choice} was predicted "{row["predicted_tier"]}"')
@@ -286,11 +276,12 @@ with tab_features:
             st.subheader("Why a county was predicted its tier")
             st.write("Select a state and county to see what drove that prediction")
 
-# SENTIMENT
+# Sentiment Page
 with tab_sentiment:
     with st.container(border=True):
         top_states_by_mention = top_states_by_mention.sort_values(by='post_count', ascending=False)
 
+        # Define a function to tag sentiments as negative, neutral or positive
         def label_sentiment(sentiment_value):
             if sentiment_value >= 0.05:
                 return 'positive'
@@ -300,15 +291,14 @@ with tab_sentiment:
 
         top_states_by_mention['sentiment'] = top_states_by_mention['avg_sentiment'].apply(label_sentiment)
 
-        # KPI row: share of state-tagged mentions (the 11,603 posts that named a state) falling into each sentiment bucket, weighted by post_count. >>> If you have sentiment labels on the full 940,106-post dataset, swap this for the true share of all posts instead of this proxy. <<<
         by_sentiment = top_states_by_mention.groupby('sentiment')['post_count'].sum()
         total_mentions = by_sentiment.sum()
         pos_pct = by_sentiment.get('positive', 0) / total_mentions * 100
         neu_pct = by_sentiment.get('neutral', 0) / total_mentions * 100
         neg_pct = by_sentiment.get('negative', 0) / total_mentions * 100
 
+        # Sentiment Cards
         k1, k2, k3 = st.columns(3)
-        # st.success/warning/error give built-in green/amber/red boxes — an easy bit of native color that maps naturally onto positive/neutral/negative, no custom CSS required.
         k1.success(f"**Positive**\n\n{pos_pct:.0f}%")
         k2.warning(f"**Neutral**\n\n{neu_pct:.0f}%")
         k3.error(f"**Negative**\n\n{neg_pct:.0f}%")
