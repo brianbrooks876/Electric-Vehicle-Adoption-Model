@@ -193,7 +193,7 @@ with tab_overview:
                 "Population Density": f"{row['population_density']:,.2f} /mi²" if row is not None else "-",
                 "Educated Population": f"{row['pct_college_educated']:,.2f}%" if row is not None else "-",
                 "Reddit Sentiment": f"{row['avg_sentiment']:,.2f}" if row is not None else "-",
-                "Total Population": f"{row['Total_population']}" if row is not None else "-",
+                "Total Population": f"{row['Total_population']:,.0f}" if row is not None else "-",
             }
             st.table(pd.DataFrame(feats.items(), columns=["Feature", "Value"]).set_index("Feature"))
 
