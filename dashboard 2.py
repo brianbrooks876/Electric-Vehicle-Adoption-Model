@@ -211,11 +211,11 @@ with tab_models:
 
         metrics_table = pd.DataFrame(MODEL_METRICS).transpose()
         metrics_table = metrics_table.rename(columns={
-            "precision": "Precision", "recall": "Recall", "f1-score": "F1", "support": "Support",
+            "precision": "Precision", "recall": "Recall", "f1-score": "F1",
         })
         st.dataframe(
-            metrics_table[["Precision", "Recall", "F1", "Support"]].style.format(
-                {"Precision": "{:.3f}", "Recall": "{:.3f}", "F1": "{:.3f}", "Support": "{:.0f}"}
+            metrics_table[["Precision", "Recall", "F1", "ROC-AUC"]].style.format(
+                {"Precision": "{:.3f}", "Recall": "{:.3f}", "F1": "{:.3f}", "ROC-AUC": "{:.3f}"}
             ),
             use_container_width=True,
         )
