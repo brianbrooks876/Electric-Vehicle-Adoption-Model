@@ -4,7 +4,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
-import matplotlib.cm as cm
+import matplotlib
 from matplotlib.colors import Normalize
 from matplotlib.colors import rgb2hex
 import joblib
@@ -462,7 +462,7 @@ elif page == "Sentiment":
             return 'neutral'
         top_states_by_mention['sentiment'] = top_states_by_mention['avg_sentiment'].apply(label_sentiment)
 
-        cmapR = cm.get_cmap('RdYlGn')
+        cmapR = matplotlib.colormaps['RdYlGn']
         norm = Normalize(vmin = -1, vmax = 1)
         top_states_by_mention['colour'] = top_states_by_mention['avg_sentiment'].apply(lambda r: rgb2hex(cmapR(norm(r))))
 
