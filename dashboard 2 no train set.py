@@ -66,7 +66,8 @@ st.info(
 )
 
 # State/County picker
-st.session_state.selected_state = "-"
+if "selected_state" not in st.session_state:
+    st.session_state.selected_state = "-"
 if "selected_county" not in st.session_state:
     st.session_state.selected_county = "-"
 
