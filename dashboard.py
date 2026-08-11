@@ -159,7 +159,7 @@ with tab_overview:
             feats = {
                 "Median Household Income": f"${row['Median_household_income']:,.2f}" if row is not None else "-",
                 "Charging Stations Per 100K": f"{row['chargers_per_100k']:,.2f}" if row is not None else "-",
-                "Population Density": f"{row['population_density']*1000:,.2f} /km²" if row is not None else "-",
+                "Population Density": f"{row['population_density']*1000000:,.2f} /km²" if row is not None else "-",
                 "Educated Population": f"{row['pct_college_educated']:.2f}%" if row is not None else "-",
                 "Reddit Sentiment": f"{row['avg_sentiment']:.2f}" if row is not None else "-",
                 "Total Population": f"{row['Total_population']:,.0f}" if row is not None else "-",
