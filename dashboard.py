@@ -132,23 +132,23 @@ with tab_overview:
 
     with col_map:
         with st.container(border=True):
-            st.subheader("Predicted Adoption by County")
+            st.subheader("Actual Adoption by County")
             st.caption("Grey counties have no matching record in the training data")
 
             # The geojson ships ~3,221 counties; modelOverviewDF only covers the ~3,133 counties in the training set. Left-joining onto the full FIPS list means every shape gets a color — the remainder ("No data") — instead of being left blank, which used to look like a rendering bug.
             map_df = pd.DataFrame({"StCnty FIPS Code": ALL_COUNTY_FIPS}).merge(
-                modelOverviewDF[["StCnty FIPS Code", "predicted_tier", "County", "State"]],
+                modelOverviewDF[["StCnty FIPS Code", "actual_tier", "County", "State"]],
                 on="StCnty FIPS Code", how="left",
             )
-            map_df["predicted_tier"] = map_df["predicted_tier"].fillna("No data")
+            map_df["actual"] = map_df["actual_tier"].fillna("No data")
             map_df["County"] = map_df["County"].fillna("—")
             map_df["State"] = map_df["State"].fillna("—")
 
             fig = px.choropleth(
                 map_df, geojson=counties_geojson,
-                locations="StCnty FIPS Code", color="predicted_tier", color_discrete_map=TIER_COLORS,
-                scope="usa", category_orders={"predicted_tier": ["Low", "High", "No data"]},
-                hover_data={"County": True, "State": True, "predicted_tier": True, "StCnty FIPS Code": False},
+                locations="StCnty FIPS Code", color="actual_tier", color_discrete_map=TIER_COLORS,
+                scope="usa", category_orders={"actual_tier": ["Low", "High", "No data"]},
+                hover_data={"County": True, "State": True, "actual_tier": True, "StCnty FIPS Code": False},
             )
             fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=460)
             st.plotly_chart(fig, use_container_width=True)
